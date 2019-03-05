@@ -1,0 +1,862 @@
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd
+    http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
+
+
+	<changeSet id="1" author="balys">
+		<sql  endDelimiter=";" splitStatements="true"
+			stripComments="true">
+			CREATE TABLE NODE_LOCK (
+			APPLICATION VARCHAR(100) NOT NULL,
+			NODENAME VARCHAR(100) NOT NULL,
+			STATUS VARCHAR(100),
+			OWNER VARCHAR(100)
+			) ORGANIZE BY ROW;
+			ALTER TABLE NODE_LOCK
+			ADD CONSTRAINT NODE_LOCK_PK PRIMARY KEY ( APPLICATION, NODENAME ) ;
+		</sql>
+	</changeSet>
+	<changeSet id="2" author="balys">
+		<sql  endDelimiter=";" splitStatements="true"
+			stripComments="true">
+			ALTER TABLE NODE_LOCK
+			ADD COLUMN SANDBOXNAME VARCHAR(200) ;
+		</sql>
+	</changeSet>
+	<changeSet id="3" author="balys">
+		<sql  endDelimiter=";" splitStatements="true"
+			stripComments="true">
+			ALTER TABLE NODE_LOCK
+			ADD COLUMN OPTCOUNTER BIGINT DEFAULT 0 ;
+		</sql>
+	</changeSet>
+	<changeSet id="4-Create-USER_REGIONS-Table" failOnError="true"
+		author="Mindaugas">
+		<sql >
+			CREATE TABLE USER_REGIONS (
+			 ID BIGINT NOT NULL, REGION VARCHAR(255) NOT NULL,
+			 USER_NAME VARCHAR(255), 
+			 PRIMARY KEY (ID)) ORGANIZE BY ROW;
+			 CREATE SEQUENCE USER_REGIONS_ID_SEQ INCREMENT BY 50 START WITH 50;
+		</sql>
+	</changeSet>
+	<changeSet id="5-Create-USER_DETAILS-Table" failOnError="true"
+		author="Mindaugas">
+		<sql  endDelimiter=";" splitStatements="true" stripComments="true">
+			CREATE TABLE USER_DETAILS (
+			 USER_NAME VARCHAR(255) NOT NULL, 
+			 CAMID VARCHAR(255), 
+			 PRIMARY KEY (USER_NAME)) ORGANIZE BY ROW;
+			ALTER TABLE USER_REGIONS ADD CONSTRAINT SERREGIONSUSERNAME FOREIGN KEY (USER_NAME) REFERENCES USER_DETAILS (USER_NAME);
+		</sql>
+	</changeSet>
+	<changeSet id="6-NODE_LOCK-Add-Date-Column" runInTransaction="true"  author="Mindaugas">
+	
+	<addColumn tableName="NODE_LOCK">
+	      <column name="CREATION_DATE" type="TIMESTAMP"/>
+	</addColumn>
+
+    <sql  endDelimiter=";"> 
+	   UPDATE NODE_LOCK SET CREATION_DATE = TIMESTAMP('2000-01-01-00.00.00.000000') WHERE CREATION_DATE IS NULL ;
+	   ALTER TABLE NODE_LOCK ALTER COLUMN CREATION_DATE SET NOT NULL;
+	</sql>
+	 <sql  endDelimiter=";"> 
+	   call Sysproc.ADMIN_CMD('REORG TABLE NODE_LOCK'); 
+       call Sysproc.ADMIN_CMD('REORG TABLE NODE_LOCK');
+	 </sql>
+	<rollback>
+       <dropColumn  tableName="NODE_LOCK" columnName="CREATION_DATE" />
+       call Sysproc.ADMIN_CMD('REORG TABLE NODE_LOCK');
+       call Sysproc.ADMIN_CMD('REORG TABLE NODE_LOCK');
+    </rollback>
+	
+    </changeSet>
+    
+    <changeSet id="7-Create-SYSTEM_PROPERTIES-" runInTransaction="true"  author="Mindaugas">
+    <sql  endDelimiter=";"> 
+        CREATE TABLE SYSTEM_PROPERTIES (
+            ID BIGINT NOT NULL, 
+            KEY VARCHAR(255) NOT NULL, 
+            REGION VARCHAR(255) NOT NULL, 
+            VAL VARCHAR(255), 
+        PRIMARY KEY (ID)) ORGANIZE BY ROW;
+        CREATE INDEX SYSTEM_PROPERTIES_REGION ON SYSTEM_PROPERTIES (REGION, KEY);
+        CREATE SEQUENCE SYSTEM_PROPERTIES_ID_SEQ INCREMENT BY 50 START WITH 50;
+    </sql>
+    <sql  endDelimiter=";"> 
+       call Sysproc.ADMIN_CMD('REORG TABLE SYSTEM_PROPERTIES'); 
+       call Sysproc.ADMIN_CMD('REORG TABLE SYSTEM_PROPERTIES');
+     </sql>
+     
+     <rollback>
+       <sql  endDelimiter=";">
+        DROP TABLE SYSTEM_PROPERTIES;
+        DROP SEQUENCE SYSTEM_PROPERTIES_ID_SEQ;
+       </sql>
+    </rollback>
+    </changeSet>
+    
+    <changeSet id="8-Add-Values-SYSTEM_PROPERTIES-" runInTransaction="true"  author="Mindaugas">
+     <sql  endDelimiter=";">
+		call Sysproc.ADMIN_CMD('REORG TABLE SYSTEM_PROPERTIES');
+		
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'EU', 'MAIN_CUBE', 'RR Europe');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'EU', 'RR_APPROVAL_DIMENTION', 'rr approval_Europe');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'EU', 'RR_MEASURES_DIMENTION', 'RR measures v3');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'EU', 'ACCOUNTS_PROJECTS', 'accounts - projects rr_Europe');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'EU', 'MAIN_MGMT_CUBE', 'RR Mgmt Europe');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'EU', 'RR_MGMT_ROADMAP_DIMENSION', 'Roadmap Item Type');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'EU', 'RR_APPROVAL_MGMT', 'rr approval mgmt_Europe');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'EU', 'RR_MGMT_DIMENTION', 'RR Mgmt Europe');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'EU', 'readOnly', 'false');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'EU', 'baseUrl', 'http://backend.dev.ibp.w3-969.ibm.com:7001/cognos/rr/api/v1');
+		
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'NA-GTS', 'MAIN_CUBE', 'RR');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'NA-GTS', 'RR_APPROVAL_DIMENTION', 'rr approval');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'NA-GTS', 'RR_MEASURES_DIMENTION', 'RR measures v3');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'NA-GTS', 'ACCOUNTS_PROJECTS', 'accounts - projects rr');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'NA-GTS', 'MAIN_MGMT_CUBE', 'RR Mgmt');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'NA-GTS', 'RR_MGMT_ROADMAP_DIMENSION', 'Roadmap Item Type');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'NA-GTS', 'RR_APPROVAL_MGMT', 'RR_APPROVAL_MGMT');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'NA-GTS', 'RR_MGMT_DIMENTION', 'RR Mgmt');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'NA-GTS', 'readOnly', 'false');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'NA-GTS', 'baseUrl', 'https://dev-06.w3-969.ibm.com:7001/cognos/na-gts-rr/api/v1');
+		
+		
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'SYSTEM', 'NA-GTS_loginUrl', 'https://eapim-dev.w3ibm.mybluemix.net/sales/development/ibp/dev-06/login');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'SYSTEM', 'EU_loginUrl', 'http://dev-ibp-cognos-backend.w3ibm.mybluemix.net/sales/development/ibp/dev/cognos/login');
+		
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'SYSTEM', 'IBP_SUPPORT_URL_WATSON', 'https://cognitive-advisor-help-ibp.w3ibm.mybluemix.net/api/v2/search/external/');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'SYSTEM', 'IBP_SUPPORT_USERNAME', 'IBP');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'SYSTEM', 'IBP_SUPPORT_PASSWORD', 'Dy7n-WNHLbVB7QA-');
+     </sql>
+    </changeSet>
+    
+    <changeSet id="11-Add-SYSTEM_ERRORS-Table" runInTransaction="true"  author="Mindaugas">
+        <sql  endDelimiter=";">
+	        CREATE TABLE SYSTEM_ERRORS (
+	            ID BIGINT NOT NULL,
+	            DATE TIMESTAMP NOT NULL,  
+	            REGION VARCHAR(30) NOT NULL, 
+	            USER_NAME VARCHAR(255) NOT NULL,
+	            TYPE VARCHAR(30) NOT NULL,
+	            MESSAGE VARCHAR(255), 
+	            STACK CLOB(64000), 
+	            CAUSE VARCHAR(255), 
+	            PRIMARY KEY (ID)) ORGANIZE BY ROW;
+	            
+			CREATE INDEX SYSTEM_ERRORS_DATE ON SYSTEM_ERRORS (DATE);
+			CREATE INDEX SYSTEM_ERRORS_REGION ON SYSTEM_ERRORS (REGION);
+			CREATE INDEX SYSTEM_ERRORS_USER ON SYSTEM_ERRORS (USER_NAME);
+			
+			CREATE SEQUENCE SYSTEM_ERRORS_ID_SEQ INCREMENT BY 2 START WITH 2;
+           
+        </sql>
+        <sql  endDelimiter=";"> 
+            call Sysproc.ADMIN_CMD('REORG TABLE SYSTEM_ERRORS');
+            call Sysproc.ADMIN_CMD('REORG TABLE SYSTEM_ERRORS');
+        </sql>
+        
+	    <rollback>
+	       <sql  endDelimiter=";">
+	           DROP INDEX SYSTEM_ERRORS_DATE;
+			   DROP INDEX SYSTEM_ERRORS_REGION;
+			   DROP INDEX SYSTEM_ERRORS_USER;
+	           DROP TABLE SYSTEM_ERRORS;
+	           DROP SEQUENCE SYSTEM_ERRORS_ID_SEQ;
+	       </sql>
+    </rollback>
+    </changeSet>
+    <changeSet id="9-Add-Values-SYSTEM_PROPERTIES-" runInTransaction="true"  author="Balys">
+    <sql  endDelimiter=";">
+    	INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'ADDITIONAL_FIELDS','NA-GTS','{ "queryExtra": [{"name": "Coverage id_load",  "type": "account"}], "ui": [{"name": "coverageId", "position": 5, "type": "account"}]}');
+    </sql>
+    </changeSet>
+
+    <changeSet id="10-Create-QUARTER_STATUS-" runInTransaction="true"  author="Vladislovas">
+    <sql  endDelimiter=";"> 
+        CREATE TABLE QUARTER_STATUS (
+            YEAR INTEGER NOT NULL, 
+            REGION VARCHAR(255) NOT NULL,
+        	Q1 SMALLINT DEFAULT 0 NOT NULL, 
+        	Q2 SMALLINT DEFAULT 0 NOT NULL, 
+        	Q3 SMALLINT DEFAULT 0 NOT NULL, 
+        	Q4 SMALLINT DEFAULT 0 NOT NULL, 
+        PRIMARY KEY (YEAR, REGION)) ORGANIZE BY ROW;
+    </sql>
+    <sql  endDelimiter=";"> 
+       call Sysproc.ADMIN_CMD('REORG TABLE QUARTER_STATUS'); 
+       call Sysproc.ADMIN_CMD('REORG TABLE QUARTER_STATUS');
+     </sql>
+     
+     <rollback>
+       <sql  endDelimiter=";">
+        DROP TABLE QUARTER_STATUS;
+       </sql>
+    </rollback>
+    </changeSet>
+
+    <changeSet id="12-Add-Properties-update-after-DEV-DNS-change" runInTransaction="true"  author="Mindaugas">
+        <sql  endDelimiter=";">
+            UPDATE SYSTEM_PROPERTIES SET VAL='http://dev-07.ibp.w3-969.ibm.com:7001/cognos/rr/api/v1' WHERE (KEY='baseUrl' AND REGION='EU');
+            UPDATE SYSTEM_PROPERTIES SET VAL='http://dev-06.ibp.w3-969.ibm.com:7001/cognos/na-gts-rr/api/v1' WHERE (KEY='baseUrl' AND REGION='NA-GTS');
+            UPDATE SYSTEM_PROPERTIES SET VAL='https://eapim-dev.w3ibm.mybluemix.net/sales/development/ibp/dev-07/login' WHERE (KEY='EU_loginUrl' AND REGION='SYSTEM');
+        </sql>
+    </changeSet>
+    
+    <changeSet id="13-Add-SYSTEM_PROPERTIES-FOR-NA-GBS" runInTransaction="true"  author="Mindaugas">
+        <sql  endDelimiter=";">
+	        INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'NA-GBS', 'MAIN_CUBE', 'RR');
+	        INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'NA-GBS', 'RR_APPROVAL_DIMENTION', 'rr approval');
+	        INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'NA-GBS', 'RR_MEASURES_DIMENTION', 'RR measures v3');
+	        INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'NA-GBS', 'ACCOUNTS_PROJECTS', 'accounts - projects rr');
+	        INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'NA-GBS', 'MAIN_MGMT_CUBE', 'RR Mgmt');
+	        INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'NA-GBS', 'RR_MGMT_ROADMAP_DIMENSION', 'Roadmap Item Type');
+	        INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'NA-GBS', 'RR_APPROVAL_MGMT', 'RR_APPROVAL_MGMT');
+	        INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'NA-GBS', 'RR_MGMT_DIMENTION', 'RR Mgmt');
+	        INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'NA-GBS', 'readOnly', 'false');
+	        INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'NA-GBS', 'baseUrl', 'http://dev-06.ibp.w3-969.ibm.com:7001/cognos/na-gbs-rr/api/v1');
+	        
+	        INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'SYSTEM', 'NA-GBS_loginUrl', 'https://eapim-dev.w3ibm.mybluemix.net/sales/development/ibp/dev-06/login');
+        </sql>
+    </changeSet>
+    <changeSet id="14-Add-Values-SYSTEM_PROPERTIES-" runInTransaction="true"  author="Balys">
+    <sql  endDelimiter=";">
+    	INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'LOWEST_NODE_LOCK_ONLY','NA-GTS','false');
+    	INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'LOWEST_NODE_LOCK_ONLY','EU','true');
+    </sql>
+    </changeSet>
+    <changeSet id="15-Add-Values-SYSTEM_PROPERTIES-" runInTransaction="true"  author="Balys">
+    <sql  endDelimiter=";">
+    	UPDATE SYSTEM_PROPERTIES SET VAL='{ "queryExtra": [{"name": "Coverage id_load",  "type": "account"},{"name": "Contract #_load",  "type": "account"}], "ui": [{"name": "coverageId", "position": 5, "type": "account"}, {"name": "contract", "position": 2, "type": "account"}]}'  
+			WHERE REGION = 'NA-GTS' and KEY = 'ADDITIONAL_FIELDS';
+    </sql>
+    </changeSet>
+    <changeSet id="16-Add-Values-SYSTEM_PROPERTIES-" runInTransaction="true"  author="Balys">
+    <sql  endDelimiter=";">
+    	INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'ADDITIONAL_FIELDS','NA-GBS','{ "queryExtra": [{"name": "WBS Level",  "type": "account"}, {"name": "Contract #_load",  "type": "account"}], "ui": [{"name": "wbsLevel", "position": 6, "type": "account"}, {"name": "contract", "position": 2, "type": "account"}]}');
+    </sql>
+    </changeSet>
+    <changeSet id="17-Add-Values-SYSTEM_PROPERTIES-" runInTransaction="true"  author="Balys">
+    <sql  endDelimiter=";">
+		ALTER TABLE SYSTEM_PROPERTIES ALTER COLUMN VAL SET DATA TYPE VARCHAR(4000);
+
+		UPDATE SYSTEM_PROPERTIES SET VAL='{ "queryExtra": [{"name": "Coverage id_load",  "type": "account"},{"name": "Contract #_load",  "type": "account"}], "ui": [{"name": "coverageId", "position": 5, "type": "account"}, {"name": "contract", "position": 2, "type": "account"},{"name": "contract", "position": 2, "type": "zero"}, {"name": "coverageId", "position": 5, "type": "zero"}]}'  
+			WHERE REGION = 'NA-GTS' and KEY = 'ADDITIONAL_FIELDS';	
+    </sql>
+    </changeSet>
+    <changeSet id="18-Node_lock_reimplementatation" runInTransaction="true"  author="Mindaugas">
+	    <addColumn tableName="USER_DETAILS">
+	          <column name="NAME_LABEL" type="VARCHAR(255)"  position="3" />
+	    </addColumn>
+	    <dropTable cascadeConstraints="true" tableName="NODE_LOCK"/>
+        <sql  endDelimiter=";">
+        CREATE TABLE NODE_LOCK_DETAILS (
+            ID BIGINT NOT NULL, 
+            CREATION_DATE TIMESTAMP NOT NULL, 
+            REGION VARCHAR(255) NOT NULL,
+            SANDBOX_NAME VARCHAR(255) NOT NULL, 
+            USER_ID VARCHAR(255) NOT NULL, 
+        PRIMARY KEY (ID)) ORGANIZE BY ROW;
+        
+        CREATE INDEX NODE_LOCK_DETAILS_REGION ON NODE_LOCK_DETAILS (REGION);
+        CREATE INDEX NODE_LOCK_DETAILS_SANDBOX_NAME ON NODE_LOCK_DETAILS (SANDBOX_NAME);
+            
+        CREATE TABLE NODE_LOCK (
+            ID BIGINT NOT NULL, 
+            NODE_NAME VARCHAR(255) NOT NULL,
+            LOCK_DETAILS_ID BIGINT NOT NULL, 
+        PRIMARY KEY (ID)) ORGANIZE BY ROW;
+        
+        CREATE INDEX NODE_LOCK_NODE_NAME ON NODE_LOCK (NODE_NAME);
+        
+        ALTER TABLE NODE_LOCK_DETAILS ADD CONSTRAINT NDELOCKDETAILSSRID FOREIGN KEY (USER_ID) REFERENCES USER_DETAILS (USER_NAME);
+        ALTER TABLE NODE_LOCK ADD CONSTRAINT NDLOCKLCKDETAILSID FOREIGN KEY (LOCK_DETAILS_ID) REFERENCES NODE_LOCK_DETAILS (ID);
+        
+        CREATE SEQUENCE NODE_LOCK_DETAILS_ID_SEQ INCREMENT BY 50 START WITH 50;
+        CREATE SEQUENCE NODE_LOCK_ID_SEQ INCREMENT BY 100 START WITH 100;
+        
+        call Sysproc.ADMIN_CMD('REORG TABLE NODE_LOCK_DETAILS');
+        call Sysproc.ADMIN_CMD('REORG TABLE NODE_LOCK');
+        </sql>
+    </changeSet>
+    <changeSet id="19-Add-Values-SYSTEM_PROPERTIES-" runInTransaction="true"  author="Balys">
+    <sql  endDelimiter=";">
+		update SYSTEM_PROPERTIES set val = '{ "queryExtra": [{"name": "Coverage id_load",  "type": "account"},{"name": "Contract #_load",  "type": "account"}, {"name": "Business Unit_load",  "type": "account"}], "ui": [{"name": "coverageId", "position": 5, "type": "account"}, {"name": "contract", "position": 2, "type": "account"},{"name": "contract", "position": 2, "type": "zero"}, {"name": "coverageId", "position": 5, "type": "zero"}]}' where REGION = 'NA-GTS' and key = 'ADDITIONAL_FIELDS'
+    </sql>
+    </changeSet>
+     <changeSet id="20-Update-Sequence" runInTransaction="true"  author="Mindaugas">
+        <alterSequence  incrementBy="50" sequenceName="SYSTEM_ERRORS_ID_SEQ"/>
+     </changeSet>
+     
+     <changeSet id="21-System-Loading-Indication" runInTransaction="true"  author="Mindaugas">
+        <alterSequence  incrementBy="1" sequenceName="SYSTEM_PROPERTIES_ID_SEQ"/>
+        <sql  endDelimiter=";">
+            INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'SYSTEM', 'API-KEY', 'PTjOhZUt2xM9LUdXKW6tcZxrWrD5K4okazFluG4HTiomDfPHpRLr4zM0XpPb84XoSS2xuHGdz8Cf9F3pLcJjVwrLle4WT9KYXAN6');
+        </sql>
+     </changeSet>
+     <changeSet id="22-Add-USER_AGENT-COLL" runInTransaction="true"  author="Mindaugas">
+        <addColumn tableName="SYSTEM_ERRORS">
+            <column name="USER_AGENT" type="varchar(255)"/>
+        </addColumn>
+     </changeSet>
+     
+     <changeSet id="33-Add-SYSTEM_PROPERTIES-FOR-AP" runInTransaction="true"  author="Mindaugas">
+        <sql  endDelimiter=";">
+	        INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'AP', 'MAIN_CUBE', 'RR Europe');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'AP', 'RR_APPROVAL_DIMENTION', 'rr approval_Europe');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'AP', 'RR_MEASURES_DIMENTION', 'RR measures v3');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'AP', 'ACCOUNTS_PROJECTS', 'accounts - projects rr_Europe');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'AP', 'MAIN_MGMT_CUBE', 'RR Mgmt Europe');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'AP', 'RR_MGMT_ROADMAP_DIMENSION', 'Roadmap Item Type');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'AP', 'RR_APPROVAL_MGMT', 'rr approval mgmt_Europe');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'AP', 'RR_MGMT_DIMENTION', 'RR Mgmt Europe');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'AP', 'readOnly', 'false');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'AP', 'baseUrl', 'http://dev-05.ibp.w3-969.ibm.com:7001/cognos/ap/api/v1');
+		
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'SYSTEM', 'AP_loginUrl', 'https://eapim-dev.w3ibm.mybluemix.net/sales/development/ibp/dev-05/login');
+        </sql>
+    </changeSet>
+    
+    <changeSet id="24-Add-SYSTEM_PROPERTIES-FOR-AP" runInTransaction="true"  author="Balys">
+        <sql  endDelimiter=";">
+	        INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'MEA', 'MAIN_CUBE', 'RR Europe');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'MEA', 'RR_APPROVAL_DIMENTION', 'rr approval_Europe');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'MEA', 'RR_MEASURES_DIMENTION', 'RR measures v3');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'MEA', 'ACCOUNTS_PROJECTS', 'accounts - projects rr_Europe');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'MEA', 'MAIN_MGMT_CUBE', 'RR Mgmt Europe');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'MEA', 'RR_MGMT_ROADMAP_DIMENSION', 'Roadmap Item Type');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'MEA', 'RR_APPROVAL_MGMT', 'rr approval mgmt_Europe');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'MEA', 'RR_MGMT_DIMENTION', 'RR Mgmt Europe');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'MEA', 'readOnly', 'false');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'MEA', 'baseUrl', 'https://dev-05.ibp.w3-969.ibm.com:7001/cognos/mea/api/v1');
+		
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'SYSTEM', 'MEA_loginUrl', 'https://eapim-dev.w3ibm.mybluemix.net/sales/development/ibp/dev-05/login');
+        </sql>
+    </changeSet>
+     
+     <changeSet id="25-Add-SYSTEM_PROPERTIES-FOR-ZERORDMP_FILTER" runInTransaction="true"  author="Balys">
+        <sql  endDelimiter=";">
+	        INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'NA-GBS', 'FILTERING_BY_DEC_DATE', 'true');
+        </sql>
+    </changeSet>
+    
+    <changeSet id="26-Add-SYSTEM_PROPERTIES-GMT" runInTransaction="true"  author="Balys">
+        <sql  endDelimiter=";">
+	        INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'NA-GBS', 'GMT', 'NA');
+	        INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'NA-GTS', 'GMT', 'NA');
+	        INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'EU', 'GMT', 'Europe');
+        </sql>
+    </changeSet>
+
+	<changeSet id="27-Add-SYSTEM_PROPERTIES-DATE" runInTransaction="true"  author="Martins">
+        <sql  endDelimiter=";">
+	        INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'NA-GBS', 'DISPLAY_DATE_FORMAT', 'MM/dd/yyyy');
+	        INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'NA-GTS', 'DISPLAY_DATE_FORMAT', 'MM/dd/yyyy');
+	        INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'EU', 'DISPLAY_DATE_FORMAT', 'dd.MM.yyyy');
+        </sql>
+    </changeSet>
+    <changeSet id="28-Add-SYSTEM_PROPERTIES-DATE-for-AP" runInTransaction="true"  author="Mindaugas">
+        <sql  endDelimiter=";">
+            INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'AP', 'DISPLAY_DATE_FORMAT', 'yyyy/MM/dd');
+        </sql>
+    </changeSet>
+     <changeSet id="29-Update-COV_ID_FLAG-for-EU" runInTransaction="true"  author="Mindaugas">
+        <sql  endDelimiter=";">
+            UPDATE SYSTEM_PROPERTIES SET VAL = 'true'  WHERE REGION = 'EU' AND KEY ='COV_ID_FLAG';
+        </sql>
+    </changeSet>
+	 <changeSet id="30-Enable-Security-Check-NA-GTS" runInTransaction="true"  author="Balys">
+        <sql  endDelimiter=";">
+            INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'NA-GTS', 'ENABLE_SECURITY_CHECK', 'true');
+        </sql>
+    </changeSet>
+	<changeSet id="31-Welcome-message-NA-GTS" runInTransaction="true"  author="Balys">
+        <sql  endDelimiter=";">
+            INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'NA-GTS', 'WELCOME_MESSAGE', 'Please note that all dollar values reflected in IBP are in USD.');
+        </sql>
+    </changeSet>
+    
+    <changeSet id="32-Slack-integration" runInTransaction="true"  author="Mindaugas">
+        <sql  endDelimiter=";">
+            INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'SYSTEM', 'SLACK_webhookUrl', 'https://hooks.slack.com/services/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');
+            INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'SYSTEM', 'SLACK_channel', '#java_app_logs_dev');
+            INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'SYSTEM', 'enviroment', 'DEV');
+        </sql>
+    </changeSet>
+    <changeSet id="33-Travel-Cost" runInTransaction="true"  author="Mindaugas">
+        <sql  endDelimiter=";">
+            INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'NA-GBS', 'TRAVEL_COST', 'true');
+        </sql>
+    </changeSet>
+    <changeSet id="34-Add State column to SYSTEM_ERRORS" runInTransaction="true"  author="Mindaugas">
+    <addColumn tableName="SYSTEM_ERRORS">
+        <column name="STATE" type="VARCHAR(255)"/>
+    </addColumn>
+    </changeSet>
+    
+    <changeSet id="35-NA-GBS_Roadmap-update" runInTransaction="true"  author="Balys">
+        <sql  endDelimiter=";">
+        	update SYSTEM_PROPERTIES set val='{ "queryExtra": [{"name": "WBS Level",  "type": "account"}, {"name": "Contract #_load",  "type": "account"}, {"name": "Cluster Name",  "type": "account"}, {"name": "Cluster Name",  "type": "zero"}, {"name": "Roadmap Status_load",  "type": "account"}], "ui": [{"name": "wbsLevel", "position": 6, "type": "account"}, {"name": "clusterName", "position": 7, "type": "account"}, {"name": "clusterName", "position": 8, "type": "zero"}, {"name": "contract", "position": 2, "type": "account"}, {"name": "roadmapStatus", "position": 9, "type": "account"}]}' where region = 'NA-GBS' and key = 'ADDITIONAL_FIELDS';    
+        </sql>
+    </changeSet>
+    
+    <changeSet id="36-Add-SYSTEM_PROPERTIES-FOR-LA" runInTransaction="true"  author="Gerardas">
+        <sql  endDelimiter=";">
+	        INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'LA', 'MAIN_CUBE', 'RR Input');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'LA', 'RR_APPROVAL_DIMENTION', 'RR approval');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'LA', 'RR_MEASURES_DIMENTION', 'RR measures');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'LA', 'ACCOUNTS_PROJECTS', 'accounts - projects RR');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'LA', 'MAIN_MGMT_CUBE', 'RR Mgmt');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'LA', 'RR_MGMT_ROADMAP_DIMENSION', 'Roadmap Item Type');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'LA', 'RR_APPROVAL_MGMT', 'RR approval Mgmt');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'LA', 'RR_MGMT_DIMENTION', 'RR Mgmt');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'LA', 'readOnly', 'false');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'LA', 'baseUrl', 'https://dev-05.ibp.w3-969.ibm.com:7001/cognos/la/api/v1');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'SYSTEM', 'LA_loginUrl', 'https://eapim-dev.w3ibm.mybluemix.net/sales/development/ibp/dev-05/login');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'LA', 'ENABLE_SECURITY_CHECK', 'true');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'LA', 'DISPLAY_DATE_FORMAT', 'yyyy/MM/dd');
+		INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'LOWEST_NODE_LOCK_ONLY','LA','true');
+        </sql>
+    </changeSet>
+    
+    <changeSet id="37-NA-GBS_Roadmap-update" runInTransaction="true"  author="Balys">
+        <sql  endDelimiter=";">
+        	update SYSTEM_PROPERTIES set val='{ "queryExtra": [{"name": "WBS Level",  "type": "account"}, {"name": "Contract #_load",  "type": "account"}, {"name": "Cluster Name",  "type": "account"}, {"name": "Cluster Name",  "type": "zero"}, {"name": "Roadmap Status_load",  "type": "account"}], "ui": [{"name": "wbsLevel", "position": 6, "type": "account"}, {"name": "clusterName", "position": 7, "type": "account"}, {"name": "clusterName", "position": 8, "type": "zero"}, {"name": "contract", "position": 2, "type": "account"}, {"name": "roadmapStatus", "position": 9, "type": "account"}, {"name": "practise", "position": 11, "type": "account"}, {"name": "practise", "position": 6, "type": "zero"} ]}' where region = 'NA-GBS' and key = 'ADDITIONAL_FIELDS';    
+        </sql>
+    </changeSet>
+    <changeSet id="38-LA_Add_Missing_System_Properties" runInTransaction="true"  author="Gerardas">
+        <sql  endDelimiter=";">
+        	INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'COV_ID_FLAG','LA','true');    
+        </sql>
+    </changeSet>
+    <changeSet id="39-Add-Coverage-ID-To-EP" runInTransaction="true"  author="Balys">
+	    <sql  endDelimiter=";">
+	        INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 
+	           'EU', 'ADDITIONAL_FIELDS','{ "queryExtra": [], "ui": [{"name": "coverageId", "position": 88, "type": "account"}, {"name": "coverageName", "position": 89, "type": "account"}, {"name": "coverageType", "position": 90, "type": "account"}]}');
+	    </sql>
+    </changeSet>
+  <changeSet id="40-Add-NODE_STATE-Table" runInTransaction="true"  author="Gerardas">
+        <sql  endDelimiter=";">
+	        CREATE TABLE NODE_STATE (
+	            ID BIGINT NOT NULL,
+	            REGION VARCHAR(30) NOT NULL, 
+	            NODE_NAME VARCHAR(255) NOT NULL,
+	            LAST_UPDATED TIMESTAMP NOT NULL,  
+	            UPDATED_BY VARCHAR(255) NOT NULL,
+	            PRIMARY KEY (ID)) ORGANIZE BY ROW;
+	            
+			CREATE INDEX NODE_STATE_REGION ON NODE_STATE (REGION);
+			CREATE INDEX NODE_STATE_REGION_NODE ON NODE_STATE (REGION, NODE_NAME);
+			
+			CREATE SEQUENCE NODE_STATE_ID_SEQ INCREMENT BY 50 START WITH 50;
+           
+        </sql>
+        <sql  endDelimiter=";"> 
+            call Sysproc.ADMIN_CMD('REORG TABLE NODE_STATE');
+            call Sysproc.ADMIN_CMD('REORG TABLE NODE_STATE');
+        </sql>
+        
+	    <rollback>
+	       <sql  endDelimiter=";">
+	           DROP INDEX NODE_STATE_REGION;
+	           DROP TABLE NODE_STATE;
+	           DROP SEQUENCE NODE_STATE_ID_SEQ;
+	       </sql>
+    	</rollback>
+</changeSet>
+
+<changeSet id="41-LA_MEA_Add_Missing_System_Properties" runInTransaction="true"  author="Gerardas">
+        <sql  endDelimiter=";">
+        	INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'DISPLAY_DATE_FORMAT','LA','dd.MM.yyyy');    
+        	INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'DISPLAY_DATE_FORMAT','MEA','dd.MM.yyyy');
+        </sql>
+    </changeSet>
+    
+    <changeSet id="42-LA_Add_Missing_System_Properties_GMT" runInTransaction="true"  author="Gerardas">
+        <sql  endDelimiter=";">
+        	INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'LA', 'GMT', 'LA');
+        </sql>
+    </changeSet>
+    <changeSet id="43" author="balys">
+		<sql  endDelimiter=";" splitStatements="true"
+			stripComments="true">
+			CREATE TABLE CADENCE (
+			REGION VARCHAR(100) NOT NULL,
+			NODENAME VARCHAR(255) NOT NULL,
+			TEXT VARCHAR(32672),
+			LAST_UPDATED TIMESTAMP NOT NULL,  
+	        UPDATED_BY VARCHAR(255) NOT NULL
+			) ORGANIZE BY ROW;
+			ALTER TABLE CADENCE
+			ADD CONSTRAINT CADENCE_PK PRIMARY KEY ( REGION, NODENAME ) ;
+		</sql>
+	</changeSet>
+	<changeSet id="44-LA_Roadmap-update" runInTransaction="true"  author="Gerardas">
+        <sql  endDelimiter=";">
+        	INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'LA', 'ADDITIONAL_FIELDS', '{ "queryExtra": [{"name": "Cluster Name",  "type": "account"}, {"name": "Cluster Name",  "type": "zero"}], "ui": [{"name": "clusterName", "position": 6, "type": "account"}, {"name": "clusterName", "position": 7, "type": "zero"} ]}');
+        </sql>
+    </changeSet>
+    <changeSet id="45-Exclude-Coverage-ID-from-action-roadmap-EP" runInTransaction="true"  author="Gerardas">
+	    <sql  endDelimiter=";">
+	    UPDATE SYSTEM_PROPERTIES SET VAL='{ "queryExtra": [], "ui": [{"name": "coverageId", "position": 88, "type": "account", "excludefromaction": "true"}, {"name": "coverageName", "position": 89, "type": "account", "excludefromaction": "true"}, {"name": "coverageType", "position": 90, "type": "account", "excludefromaction": "true"}]}'  
+			WHERE REGION = 'EU' and KEY = 'ADDITIONAL_FIELDS';
+	    </sql>
+    </changeSet>
+    
+    <changeSet id="46-Management_judgement_System_Properties" runInTransaction="true"  author="Balys">
+        <sql  endDelimiter=";">
+        	INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'MANAGEMENT_JUDGEMENT_READONLY','EU','true');    
+        	INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'MANAGEMENT_JUDGEMENT_READONLY','NA-GTS','true');
+        	INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'MANAGEMENT_JUDGEMENT_READONLY','LA','true');    
+        	INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'MANAGEMENT_JUDGEMENT_READONLY','NA-GBS','true');
+        	INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'MANAGEMENT_JUDGEMENT_READONLY','MEA','true');    
+        </sql>
+    </changeSet>
+    
+    <changeSet id="47-Management_judgement_System_Properties" runInTransaction="true"  author="Balys">
+        <sql  endDelimiter=";">
+        	INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'MANAGEMENT_JUDGEMENT_NON_CLUSTER','EU','false');    
+        	INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'MANAGEMENT_JUDGEMENT_NON_CLUSTER','NA-GTS','false');
+        	INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'MANAGEMENT_JUDGEMENT_NON_CLUSTER','LA','false');    
+        	INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'MANAGEMENT_JUDGEMENT_NON_CLUSTER','NA-GBS','true');
+        	INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'MANAGEMENT_JUDGEMENT_NON_CLUSTER','MEA','false');    
+        </sql>
+    </changeSet>
+    
+    <!--changeSet id="48" author="Gerardas">
+		<sql  endDelimiter=";" splitStatements="true"
+			stripComments="true">
+			CREATE TABLE USER_BLUEGROUP (
+				USER_NAME VARCHAR(100) NOT NULL,
+				BLUEGROUP VARCHAR(4000) NOT NULL, 
+				REGION VARCHAR(10) NOT NULL
+			) ORGANIZE BY ROW;
+			ALTER TABLE USER_BLUEGROUP
+			ADD CONSTRAINT USER_BLUEGROUP_PK PRIMARY KEY ( USER_NAME, BLUEGROUP, REGION ) ;
+		</sql>
+		<rollback>
+	       <sql  endDelimiter=";">
+	        DROP TABLE USER_BLUEGROUP;
+	       </sql>
+	    </rollback>
+	</changeSet-->
+	
+	<changeSet id="49-Target_System_Properties" runInTransaction="true"  author="Balys">
+        <sql  endDelimiter=";">
+        	INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'TARGET_READONLY','EU','true');    
+        	INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'TARGET_READONLY','NA-GTS','true');
+        	INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'TARGET_READONLY','LA','true');    
+        	INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'TARGET_READONLY','NA-GBS','true');
+        	INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'TARGET_READONLY','MEA','true');    
+        </sql>
+    </changeSet>
+    
+    <changeSet id="50-Add_GDPR_Enabled_column" author="Gerardas">
+		<sql  endDelimiter=";" splitStatements="true"
+			stripComments="true">
+			ALTER TABLE USER_DETAILS
+			ADD COLUMN GDPR_ENABLED TIMESTAMP ;
+		</sql>
+	</changeSet>
+	
+	<changeSet id="51-GDPR-disclaimer-EU" runInTransaction="true"  author="Gerardas">
+        <sql  endDelimiter=";">
+            INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'EU', 'GDPR_DISCLAIMER_MESSAGE', 'Lorem ipsum dolor sit amet, est aenean malesuada convallis wisi, commodo pretium placerat fermentum elementum elementum sed, quam tempor odio nec proin suspendisse, adipiscing facilisis praesent');
+        </sql>
+    </changeSet>
+    
+    <changeSet id="52-USE_ENCODED_EMAIL_FOR_GDRP_for_all_regions" runInTransaction="true"  author="Gerardas">
+        <sql  endDelimiter=";">
+            INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'EU', 'USE_ENCODED_EMAIL_FOR_GDRP', 'true');
+            INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'NA-GBS', 'USE_ENCODED_EMAIL_FOR_GDRP', 'true');
+            INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'NA-GTS', 'USE_ENCODED_EMAIL_FOR_GDRP', 'true');
+            INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'MEA', 'USE_ENCODED_EMAIL_FOR_GDRP', 'true');
+            INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'LA', 'USE_ENCODED_EMAIL_FOR_GDRP', 'true');
+            INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'AP', 'USE_ENCODED_EMAIL_FOR_GDRP', 'true');
+        </sql>
+    </changeSet>
+	<changeSet id="53-Add_index_For_system_errors" runInTransaction="true"  author="Gerardas">
+	        <sql  endDelimiter=";">
+	             CREATE INDEX SYSTEM_ERRORS_USER_MESSAGE ON SYSTEM_ERRORS (USER_NAME, MESSAGE);
+	        </sql>
+	         <rollback>
+		       <sql  endDelimiter=";">
+		           DROP INDEX SYSTEM_ERRORS_USER_MESSAGE;
+		       </sql>
+	    </rollback>
+    </changeSet>
+    
+    <changeSet id="54-USE_ENCODED_EMAIL_FOR_GDRP_for_system_regions" runInTransaction="true"  author="Gerardas">
+        <sql  endDelimiter=";">
+            INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'SYSTEM', 'USE_ENCODED_EMAIL_FOR_GDRP', 'true');
+        </sql>
+    </changeSet>
+    
+    <changeSet id="55-update_GDPR_Disclaimer_message" runInTransaction="true"  author="Gerardas">
+        <sql  endDelimiter=";">
+            <![CDATA[ update system_properties set val = 'We recognize the importance of protecting your personal information. We would like to inform you that IBP collects information to uniquely identify users, in order that the application can:<ul><li>control access</li><li>lock business unit for editing</li><li>record last saved information</li><li>maintain user sandbox name</li><li>system errors raised during usage</li></ul>The usage of personal information for identification by IBP is limited to this purpose.<br/>More information about IBM privacy can be found in the <a href="https://w3.ibm.com/w3publisher/w3-privacy-notice/" target="_blank">IBM Internal Privacy Statement</a>. <br/>Please click OK to acknowledge that you have read this statement.'  where region = 'EU' and key = 'GDPR_DISCLAIMER_MESSAGE';]]>
+        </sql>
+    </changeSet>
+    
+    
+    <changeSet id="56-Add-Values-SYSTEM_PROPERTIES-For_Europe_GTS" runInTransaction="true"  author="Gerardas">
+     <sql  endDelimiter=";">
+	
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'EU-GTS', 'MAIN_CUBE', 'RR Input');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'EU-GTS', 'RR_APPROVAL_DIMENTION', 'RR approval');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'EU-GTS', 'RR_MEASURES_DIMENTION', 'RR measures');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'EU-GTS', 'ACCOUNTS_PROJECTS', 'accounts - projects RR');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'EU-GTS', 'MAIN_MGMT_CUBE', 'RR Mgmt');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'EU-GTS', 'RR_MGMT_ROADMAP_DIMENSION', 'Roadmap Item Type');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'EU-GTS', 'RR_APPROVAL_MGMT', 'RR approval Mgmt');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'EU-GTS', 'RR_MGMT_DIMENTION', 'RR Mgmt Europe');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'EU-GTS', 'readOnly', 'false');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'EU-GTS', 'baseUrl', 'https://dev-07.ibp.w3-969.ibm.com:7001/cognos/eugts/api/v1');
+		INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'LOWEST_NODE_LOCK_ONLY','EU-GTS','true');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'EU-GTS', 'GMT', 'Europe');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'EU-GTS', 'DISPLAY_DATE_FORMAT', 'dd.MM.yyyy');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 
+	           'EU-GTS', 'ADDITIONAL_FIELDS','{ "queryExtra": [], "ui": [{"name": "coverageId", "position": 88, "type": "account"}, {"name": "coverageName", "position": 89, "type": "account"}, {"name": "coverageType", "position": 90, "type": "account"}]}');
+	
+		UPDATE SYSTEM_PROPERTIES SET VAL='{ "queryExtra": [], "ui": [{"name": "coverageId", "position": 88, "type": "account", "excludefromaction": "true"}, {"name": "coverageName", "position": 89, "type": "account", "excludefromaction": "true"}, {"name": "coverageType", "position": 90, "type": "account", "excludefromaction": "true"}]}'  
+			WHERE REGION = 'EU-GTS' and KEY = 'ADDITIONAL_FIELDS';
+			
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'EU-GTS', 'COV_ID_FLAG', 'true');			
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'SYSTEM', 'EU-GTS_loginUrl', 'https://eapim-dev.w3ibm.mybluemix.net/sales/development/ibp/dev-07/login');
+		
+		INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'MANAGEMENT_JUDGEMENT_READONLY','EU-GTS','true');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'EU-GTS', 'USE_ENCODED_EMAIL_FOR_GDRP', 'true');
+		INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'TARGET_READONLY','EU-GTS','true');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'EU-GTS', 'DATA_LOAD', 'false');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'EU-GTS', 'MANAGEMENT_JUDGEMENT_NON_CLUSTER', 'false');
+		INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'EU-GTS', 'GDPR_DISCLAIMER_MESSAGE', 'Lorem ipsum dolor sit amet, est aenean malesuada convallis wisi, commodo pretium placerat fermentum elementum elementum sed, quam tempor odio nec proin suspendisse, adipiscing facilisis praesent');
+		<![CDATA[ update system_properties set val = 'We recognize the importance of protecting your personal information. We would like to inform you that IBP collects information to uniquely identify users, in order that the application can:<ul><li>control access</li><li>lock business unit for editing</li><li>record last saved information</li><li>maintain user sandbox name</li><li>system errors raised during usage</li></ul>The usage of personal information for identification by IBP is limited to this purpose.<br/>More information about IBM privacy can be found in the <a href="https://w3.ibm.com/w3publisher/w3-privacy-notice/" target="_blank">IBM Internal Privacy Statement</a>. <br/>Please click OK to acknowledge that you have read this statement.'  where region = 'EU-GTS' and key = 'GDPR_DISCLAIMER_MESSAGE';]]>
+     </sql>
+    </changeSet>
+    <changeSet id="57-update_Additional_fields_For_Europe_add_rank_columns" runInTransaction="true"  author="Gerardas">
+        <sql  endDelimiter=";">
+		    UPDATE SYSTEM_PROPERTIES SET VAL='{ "queryExtra": [{"name": "Cognitive Rank",  "type": "account", "position": 97, "excludefromaction": "true"}, {"name": "Cognitive Rank Reasoning",  "type": "account", "position": 98, "excludefromaction": "true"}, {"name": "Cognitive Claim Flag Reasoning",  "type": "account", "position": 99, "excludefromaction": "true"}], "ui": [{"name": "coverageId", "position": 88, "type": "account", "excludefromaction": "true"}, {"name": "coverageName", "position": 89, "type": "account", "excludefromaction": "true"}, {"name": "coverageType", "position": 90, "type": "account", "excludefromaction": "true"}, {"name": "cognitiveRank", "position": 97, "type": "account", "excludefromaction": "true"}, {"name": "cognitiveRankReasoning", "position": 98, "type": "account", "excludefromaction": "true"}, {"name": "cognitiveClaimFlagReasoning", "position": 99, "type": "account", "excludefromaction": "true"}]}'  
+					WHERE REGION = 'EU' and KEY = 'ADDITIONAL_FIELDS';
+		</sql>
+	</changeSet>
+	<changeSet id="58-Add sales stage and shift cognitive columns by 1 position" runInTransaction="true"  author="Ernestas">
+        <sql  endDelimiter=";">
+		    UPDATE SYSTEM_PROPERTIES SET VAL='{ "queryExtra": [{"name": "Cognitive Rank",  "type": "account", "position": 97, "excludefromaction": "true"}, {"name": "Cognitive Rank Reasoning",  "type": "account", "position": 98, "excludefromaction": "true"}, {"name": "Cognitive Claim Flag Reasoning",  "type": "account", "position": 99, "excludefromaction": "true"}], "ui": [{"name": "coverageId", "position": 88, "type": "account", "excludefromaction": "true"}, {"name": "coverageName", "position": 89, "type": "account", "excludefromaction": "true"}, {"name": "coverageType", "position": 90, "type": "account", "excludefromaction": "true"}, {"name": "cognitiveRank", "position": 98, "type": "account", "excludefromaction": "true"}, {"name": "cognitiveRankReasoning", "position": 99, "type": "account", "excludefromaction": "true"}, {"name": "cognitiveClaimFlagReasoning", "position": 100, "type": "account", "excludefromaction": "true"}]}'  
+					WHERE REGION = 'EU' and KEY = 'ADDITIONAL_FIELDS';
+		</sql>
+	</changeSet>
+    <changeSet id="59-QUARTER_MONTH_LOCK_for_all_regions" runInTransaction="false" author="Mantas">
+        <sql endDelimiter=";">
+            INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'EU', 'QUARTER_MONTH_LOCK', 'true');
+            INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'NA-GBS', 'QUARTER_MONTH_LOCK', 'false');
+            INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'NA-GTS', 'QUARTER_MONTH_LOCK', 'false');
+            INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'MEA', 'QUARTER_MONTH_LOCK', 'false');
+            INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'LA', 'QUARTER_MONTH_LOCK', 'false');
+            INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'AP', 'QUARTER_MONTH_LOCK', 'false');
+        </sql>
+    </changeSet>
+
+    <changeSet id="60-QUARTER_MONTH_LOCK_for_all_regions" runInTransaction="false" author="Mantas">
+        <sql endDelimiter=";">
+			update SYSTEM_PROPERTIES set VAL = 'true' where key = 'QUARTER_MONTH_LOCK' and region = 'NA-GTS';
+			update SYSTEM_PROPERTIES set VAL = 'true' where key = 'QUARTER_MONTH_LOCK' and region = 'NA-GBS';
+        </sql>
+	</changeSet>
+    
+    <changeSet id="61-Add-New-dimension-related-values-SYSTEM_PROPERTIES-For_Europe_GTS" runInTransaction="true"  author="Gerardas">
+		<sql endDelimiter=";">
+			INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'EU-GTS', 'EXTRA_DIMENSION_MAIN_CUBE', 'RR');
+			INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'EU-GTS', 'EXTRA_DIMENSION_RR_MEASURES_DIMENTION', 'RR measures');
+			INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'EU-GTS', 'USE_EXTRA_ROADMAP_ITEM_TYPE_DIMENSION', 'true');
+		</sql>
+    </changeSet>
+
+	<changeSet id="61-Enable-Coffee-and-Waterfall-reports-For_Europe_GTS" runInTransaction="false"  author="Mantas">
+		<sql endDelimiter=";">
+			INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'EU-GTS', 'COFFEE_REPORTS', 'true');
+			INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'EU-GTS', 'WATERFALL_REPORTS', 'true');
+		</sql>
+    </changeSet>
+
+	<changeSet id="62-Add Action Comment field to NA-GBS" runInTransaction="true"  author="Ernestas">
+        <sql  endDelimiter=";">
+		    UPDATE SYSTEM_PROPERTIES SET VAL='{"queryExtra":[{"name":"WBS Level","type":"account"},{"name":"Contract #_load","type":"account"},{"name":"Cluster Name","type":"account"},{"name":"Cluster Name","type":"zero"},{"name":"Roadmap Status_load","type":"account"},{"name":"Action Comment","type":"account"}],"ui":[{"name":"contract","position":9,"type":"account"},{"name":"wbsLevel","position":10,"type":"account"},{"name":"clusterName","position":11,"type":"account"},{"name":"roadmapStatus","position":12,"type":"account"},{"name":"practise","position":13,"type":"account"},{"name":"ContractsComment","position":94,"type":"account"},{"name":"practise","position":6,"type":"zero"},{"name":"clusterName","position":7,"type":"zero"}]}'
+				WHERE REGION = 'NA-GBS' and KEY = 'ADDITIONAL_FIELDS';
+		</sql>
+	</changeSet>
+
+	<changeSet id="63-Add Line Item Owner field to NA-GBS" runInTransaction="true"  author="Ernestas">
+        <sql  endDelimiter=";">
+		    UPDATE SYSTEM_PROPERTIES SET VAL='{"queryExtra":[{"name":"WBS Level","type":"account"},{"name":"Contract #_load","type":"account"},{"name":"Cluster Name","type":"account"},{"name":"Cluster Name","type":"zero"},{"name":"Roadmap Status_load","type":"account"},{"name":"Action Comment","type":"account"},{"name":"Line Item Owner_load","type":"account"},{"name":"Line Item Owner_load","type":"zero"}],"ui":[{"name":"contract","position":9,"type":"account"},{"name":"wbsLevel","position":10,"type":"account"},{"name":"clusterName","position":11,"type":"account"},{"name":"roadmapStatus","position":12,"type":"account"},{"name":"practise","position":13,"type":"account"},{"name":"ContractsComment","position":94,"type":"account"},{"name":"LineItemOwner","position":95,"type":"account"},{"name":"practise","position":6,"type":"zero"},{"name":"clusterName","position":7,"type":"zero"},{"name":"LineItemOwner","position":95,"type":"zero"}]}'
+				WHERE REGION = 'NA-GBS' and KEY = 'ADDITIONAL_FIELDS';
+		</sql>
+	</changeSet>
+
+	<changeSet id="64-Rich-Comments-For_Europe_GTS" runInTransaction="false" author="Mantas">
+		<sql endDelimiter=";">
+			INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'EU-GTS', 'RICH_COMMENT', 'true');
+		</sql>
+    </changeSet>
+	<changeSet id="65-Add scognitive columns" runInTransaction="true"  author="Balys">
+        <sql  endDelimiter=";">
+		    UPDATE SYSTEM_PROPERTIES SET VAL='{"queryExtra":[{"name":"WBS Level","type":"account"},{"name":"Contract #_load","type":"account"},{"name":"Cluster Name","type":"account"},{"name":"Cluster Name","type":"zero"},{"name":"Roadmap Status_load","type":"account"},{"name":"Action Comment","type":"account"},{"name":"Line Item Owner_load","type":"account"},{"name":"Line Item Owner_load","type":"zero"},{"name": "Cognitive Rank",  "type": "account", "position": 97, "excludefromaction": "true"}, {"name": "Cognitive Rank Reasoning",  "type": "account", "position": 98, "excludefromaction": "true"}, {"name": "Cognitive Claim Flag Reasoning",  "type": "account", "position": 99, "excludefromaction": "true"}],"ui":[{"name":"contract","position":9,"type":"account"},{"name":"wbsLevel","position":10,"type":"account"},{"name":"clusterName","position":11,"type":"account"},{"name":"roadmapStatus","position":12,"type":"account"},{"name":"practise","position":13,"type":"account"},{"name":"ContractsComment","position":94,"type":"account"},{"name":"LineItemOwner","position":95,"type":"account"},{"name":"practise","position":6,"type":"zero"},{"name":"clusterName","position":7,"type":"zero"},{"name":"LineItemOwner","position":95,"type":"zero"},{"name": "cognitiveRank", "position": 104, "type": "account", "excludefromaction": "true"}, {"name": "cognitiveRankReasoning", "position": 105, "type": "account", "excludefromaction": "true"}, {"name": "cognitiveClaimFlagReasoning", "position": 106, "type": "account", "excludefromaction": "true"}]}'
+					WHERE REGION = 'NA-GBS' and KEY = 'ADDITIONAL_FIELDS';
+			INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'NA-GBS', 'COGNITIVE_REPORTS', 'true');
+		</sql>
+	</changeSet>
+	<changeSet id="66-Add data load status for NA GTS/GBS" runInTransaction="true"  author="Mantas">
+        <sql endDelimiter=";">
+			INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'NA-GTS', 'SHOW_DATA_LOAD_STATUS', 'true');
+			INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'NA-GBS', 'SHOW_DATA_LOAD_STATUS', 'true');
+		</sql>
+	</changeSet>
+  <changeSet id="67-Cadence multi comments" runInTransaction="true"  author="Mantas">
+        <sql endDelimiter=";">
+		ALTER TABLE CADENCE ADD COLUMN ID BIGINT NOT NULL DEFAULT 0;
+		CREATE SEQUENCE CADENCE_ID_SEQUENCE START WITH 1 INCREMENT BY 1 NOCACHE;
+		UPDATE CADENCE SET ID = CADENCE_ID_SEQUENCE.NEXTVAL;
+		ALTER TABLE CADENCE DROP PRIMARY KEY;
+		ALTER TABLE CADENCE ADD CONSTRAINT CADENCE_PK PRIMARY KEY ( ID );
+		ALTER TABLE CADENCE ADD CONSTRAINT CADENCE_UNIQUE UNIQUE(ID, REGION, NODENAME);
+		call Sysproc.ADMIN_CMD('REORG TABLE CADENCE');
+
+		CREATE TABLE CADENCE_COMMENTS (
+			ID BIGINT NOT NULL,
+			CADENCE_ID BIGINT NOT NULL,
+			TEXT VARCHAR(32672),
+			LAST_UPDATED TIMESTAMP NOT NULL,  
+			CREATED_BY VARCHAR(255) NOT NULL,
+			QUARTER SMALLINT NOT NULL
+			) ORGANIZE BY ROW;
+
+		ALTER TABLE CADENCE_COMMENTS ADD CONSTRAINT CADENCE_COMMENTS_PK PRIMARY KEY (ID);
+		ALTER TABLE CADENCE_COMMENTS ADD CONSTRAINT CADENCE_COMMENTS_FK FOREIGN KEY (CADENCE_ID) REFERENCES CADENCE (ID);
+
+		CREATE SEQUENCE CADENCE_COMMENTS_ID_SEQ START WITH 1 INCREMENT BY 1 NOCACHE;
+
+		INSERT INTO CADENCE_COMMENTS (ID, CADENCE_ID, TEXT, LAST_UPDATED, CREATED_BY, QUARTER)
+		SELECT (CADENCE_COMMENTS_ID_SEQ.NEXTVAL), ID, TEXT, LAST_UPDATED, UPDATED_BY, (20184)
+		FROM CADENCE;
+
+		alter table CADENCE drop column TEXT;
+		alter table CADENCE drop column LAST_UPDATED; 
+		alter table CADENCE drop column UPDATED_BY;
+
+		call Sysproc.ADMIN_CMD('REORG TABLE CADENCE');
+		</sql>
+	</changeSet>
+	<changeSet id="68-Add sc status column to NA GBS zero rdmp" runInTransaction="true" author="Mantas">
+        <sql endDelimiter=";">
+		    UPDATE SYSTEM_PROPERTIES SET VAL='{ "queryExtra": [{ "name": "WBS Level", "type": "account" }, { "name": "Contract #_load", "type": "account" }, { "name": "Cluster Name", "type": "account" }, { "name": "Cluster Name", "type": "zero" }, { "name": "Roadmap Status_load", "type": "account" }, { "name": "Action Comment", "type": "account" }, { "name": "Line Item Owner_load", "type": "account" }, { "name": "Line Item Owner_load", "type": "zero" }, { "name": "Roadmap Status_load", "type": "zero" }, { "name": "Cognitive Rank", "type": "account", "position": 97, "excludefromaction": "true" }, { "name": "Cognitive Rank Reasoning", "type": "account", "position": 98, "excludefromaction": "true" }, { "name": "Cognitive Claim Flag Reasoning", "type": "account", "position": 99, "excludefromaction": "true" }], "ui": [{ "name": "contract", "position": 9, "type": "account" }, { "name": "wbsLevel", "position": 10, "type": "account" }, { "name": "clusterName", "position": 11, "type": "account" }, { "name": "roadmapStatus", "position": 12, "type": "account" }, { "name": "practise", "position": 13, "type": "account" }, { "name": "ContractsComment", "position": 94, "type": "account" }, { "name": "LineItemOwner", "position": 95, "type": "account" }, { "name": "practise", "position": 6, "type": "zero" }, { "name": "clusterName", "position": 7, "type": "zero" }, { "name": "roadmapStatus", "position": 12, "type": "zero" }, { "name": "LineItemOwner", "position": 95, "type": "zero" }, { "name": "cognitiveRank", "position": 104, "type": "account", "excludefromaction": "true" }, { "name": "cognitiveRankReasoning", "position": 105, "type": "account", "excludefromaction": "true" }, { "name": "cognitiveClaimFlagReasoning", "position": 106, "type": "account", "excludefromaction": "true" }] }' 
+		    WHERE REGION = 'NA-GBS' and KEY = 'ADDITIONAL_FIELDS';
+		</sql>
+	</changeSet>
+	<changeSet id="69-Add tracking rdmp flag to system properties for NA-GBS" runInTransaction="true" author="Ernestas">
+        <sql endDelimiter=";">
+		    INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'NA-GBS', 'ENABLE_TRACKING_RDMP', 'true');
+		</sql>
+	</changeSet>
+	
+	<changeSet id="70-Add-MGMT_TRACKING-Table" runInTransaction="true"  author="Gerardas">
+        <sql  endDelimiter=";">
+	        CREATE TABLE MGMT_TRACKING (
+	            ID BIGINT NOT NULL,
+	            NODE_NAME VARCHAR(255) NOT NULL,
+	            UPDATED_ON TIMESTAMP NOT NULL,  
+	            UPDATED_BY VARCHAR(255) NOT NULL,
+	            REGION VARCHAR(100) NOT NULL,
+	            YEAR VARCHAR(20) NOT NULL,
+	            QUARTER VARCHAR(20) NOT NULL,
+	            TOTAL DOUBLE NOT NULL DEFAULT 0, 
+	            PRIMARY KEY (ID)) ORGANIZE BY ROW;
+	            
+			CREATE INDEX MGMT_TRACKING_NODE ON MGMT_TRACKING (NODE_NAME);
+			CREATE INDEX MGMT_TRACKING_NODE_REGION ON MGMT_TRACKING (NODE_NAME, REGION, YEAR, QUARTER);
+			
+			CREATE SEQUENCE MGMT_TRACKING_ID_SEQ INCREMENT BY 50 START WITH 50;
+           
+        </sql>
+        <sql  endDelimiter=";"> 
+            call Sysproc.ADMIN_CMD('REORG TABLE MGMT_TRACKING');
+            call Sysproc.ADMIN_CMD('REORG TABLE MGMT_TRACKING');
+        </sql>
+        
+	    <rollback>
+	       <sql  endDelimiter=";">
+	           DROP INDEX MGMT_TRACKING_NODE;
+	           DROP INDEX MGMT_TRACKING_NODE_REGION;
+	           DROP TABLE MGMT_TRACKING;
+	           DROP SEQUENCE MGMT_TRACKING_ID_SEQ;
+	       </sql>
+    	</rollback>
+	</changeSet>
+
+	<changeSet id="71-Add tracking rdmp flag to system properties for NA-GTS" runInTransaction="true" author="Ernestas">
+        <sql endDelimiter=";">
+		    INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'NA-GTS', 'ENABLE_TRACKING_RDMP', 'true');
+		</sql>
+	</changeSet>
+	<changeSet id="72-Add profit center column to NA GBS zero rdmp" runInTransaction="true" author="Balys">
+        <sql endDelimiter=";">
+		    UPDATE SYSTEM_PROPERTIES SET VAL='{ "queryExtra": [{ "name": "WBS Level", "type": "account" }, { "name": "Contract #_load", "type": "account" }, { "name": "Cluster Name", "type": "account" }, { "name": "Cluster Name", "type": "zero" }, { "name": "Roadmap Status_load", "type": "account" }, { "name": "Action Comment", "type": "account" }, { "name": "Line Item Owner_load", "type": "account" }, { "name": "Line Item Owner_load", "type": "zero" }, { "name": "Roadmap Status_load", "type": "zero" }, { "name": "Cognitive Rank", "type": "account", "position": 97, "excludefromaction": "true" }, { "name": "Cognitive Rank Reasoning", "type": "account", "position": 98, "excludefromaction": "true" }, { "name": "Cognitive Claim Flag Reasoning", "type": "account", "position": 99, "excludefromaction": "true" },{ "name": "Profit center_load", "type":"account" }], "ui": [{ "name": "contract", "position": 9, "type": "account" }, { "name": "wbsLevel", "position": 10, "type": "account" }, { "name": "clusterName", "position": 11, "type": "account" }, { "name": "roadmapStatus", "position": 12, "type": "account" }, { "name": "practise", "position": 13, "type": "account" }, { "name": "ContractsComment", "position": 94, "type": "account" }, { "name": "LineItemOwner", "position": 95, "type": "account" }, { "name": "practise", "position": 6, "type": "zero" }, { "name": "clusterName", "position": 7, "type": "zero" }, { "name": "roadmapStatus", "position": 12, "type": "zero" }, { "name": "LineItemOwner", "position": 95, "type": "zero" }, { "name": "cognitiveRank", "position": 104, "type": "account", "excludefromaction": "true" }, { "name": "cognitiveRankReasoning", "position": 105, "type": "account", "excludefromaction": "true" }, { "name": "cognitiveClaimFlagReasoning", "position": 106, "type": "account", "excludefromaction": "true" },{ "name": "profitCenter", "position": 96, "type": "account" },{ "name": "profitCenter", "position": 96, "type": "zero" }] }' 
+		    WHERE REGION = 'NA-GBS' and KEY = 'ADDITIONAL_FIELDS';
+		</sql>
+	</changeSet>
+
+	<changeSet id="73-added cognitive advisor URL to database" runInTransaction="true" author="Gayathri">
+        <sql endDelimiter=";">
+		   INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'EU', 'CA_URL', 'https://cognitive-advisor-help.w3ibm.mybluemix.net/ui/external/instances/ibp#/create-ticket-by-link/');
+	       INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'EU-GTS', 'CA_URL', 'https://cognitive-advisor-help.w3ibm.mybluemix.net/ui/external/instances/ibp#/create-ticket-by-link/');
+		   INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'NA-GBS', 'CA_URL', 'https://cognitive-advisor-help.w3ibm.mybluemix.net/ui/external/instances/ibp#/create-ticket-by-link/');
+		   INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'NA-GTS', 'CA_URL', 'https://cognitive-advisor-help.w3ibm.mybluemix.net/ui/external/instances/ibp#/create-ticket-by-link/');	
+		</sql>
+	</changeSet>
+	
+	<changeSet id="74-enable financial goals on EU GTS" runInTransaction="true" author="Gerardas">
+        <sql endDelimiter=";">
+		   INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'EU-GTS', 'ENABLE_FINANCIAL_GOALS', 'true');
+		</sql>
+	</changeSet>
+
+	<changeSet id="72-Add popup text for EU-GTS" runInTransaction="true" author="Ernestas">
+        <sql  endDelimiter=";">
+            INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'EU-GTS', 'WELCOME_MESSAGE', 'USD in million at IBM internal plan rate $M@AAP (Actual At Plan constant currency exchange rate). Example $1.234,567M = 1 billion 234 million 567 thousand');
+        </sql>
+	</changeSet>
+
+	<changeSet id="75- Set mandatory comment fields" runInTransaction="true" author="Mantas">
+        <sql endDelimiter=";">
+		   INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'EU', 'MANDATORY_COMMENT', 'true');
+	       INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'EU-GTS', 'MANDATORY_COMMENT', 'false');
+		   INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'NA-GBS', 'MANDATORY_COMMENT', 'true');
+		   INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'NA-GTS', 'MANDATORY_COMMENT', 'true');	
+		</sql>
+	</changeSet>
+	<changeSet id="76- add values for Review measure in EU GTS" runInTransaction="true" author="Gerardas">
+        <sql endDelimiter=";">
+	       INSERT INTO SYSTEM_PROPERTIES (ID, REGION, KEY, VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL, 'EU-GTS', 'REVIEW_LIST_VALUES', 'Europe Top Mgr review required;Market GM review required;CU Leader review required;Personally owned item');
+		</sql>
+	</changeSet>
+
+	<changeSet id="77-Add-Values-SYSTEM_PROPERTIES-" runInTransaction="true"  author="Balys">
+    <sql  endDelimiter=";">
+    	INSERT INTO SYSTEM_PROPERTIES (ID,KEY,REGION,VAL) VALUES (SYSTEM_PROPERTIES_ID_SEQ.NEXTVAL,'ADDITIONAL_FIELDS','EU-GTS','{ "queryExtra": [{ "name": "Rev Value Category", "type": "account" }, { "name": "Cost Value Category", "type": "account" }], "ui": [] }');
+    </sql>
+    </changeSet>
+
+		<changeSet id="78-Add Action Task ID field to NA-GBS" runInTransaction="true"  author="Gayathri">
+        <sql  endDelimiter=";">
+		    <!-- UPDATE SYSTEM_PROPERTIES SET VAL='{"queryExtra":[{"name":"WBS Level","type":"account"},{"name":"Contract #_load","type":"account"},{"name":"Cluster Name","type":"account"},{"name":"Cluster Name","type":"zero"},{"name":"Roadmap Status_load","type":"account"},{"name":"Action Comment","type":"account"},{"name":"Action Taskid","type":"account"}],"ui":[{"name":"contract","position":9,"type":"account"},{"name":"wbsLevel","position":10,"type":"account"},{"name":"clusterName","position":11,"type":"account"},{"name":"roadmapStatus","position":12,"type":"account"},{"name":"practise","position":13,"type":"account"},{"name":"ContractsComment","position":94,"type":"account"},{"name":"practise","position":6,"type":"zero"},{"name":"clusterName","position":7,"type":"zero"}]}'
+				WHERE REGION = 'NA-GBS' and KEY = 'ADDITIONAL_FIELDS'; -->
+				  UPDATE SYSTEM_PROPERTIES SET VAL='{ "queryExtra": [{ "name": "WBS Level", "type": "account" }, { "name": "Contract #_load", "type": "account" }, { "name": "Cluster Name", "type": "account" }, { "name": "Cluster Name", "type": "zero" }, { "name": "Roadmap Status_load", "type": "account" }, { "name": "Action Comment", "type": "account" }, { "name": "Action Task_id","type":"account"},{ "name": "Line Item Owner_load", "type": "account" }, { "name": "Line Item Owner_load", "type": "zero" }, { "name": "Roadmap Status_load", "type": "zero" }, { "name": "Cognitive Rank", "type": "account", "position": 97, "excludefromaction": "true" }, { "name": "Cognitive Rank Reasoning", "type": "account", "position": 98, "excludefromaction": "true" }, { "name": "Cognitive Claim Flag Reasoning", "type": "account", "position": 99, "excludefromaction": "true" }], "ui": [{ "name": "contract", "position": 9, "type": "account" }, { "name": "wbsLevel", "position": 10, "type": "account" }, { "name": "clusterName", "position": 11, "type": "account" }, { "name": "roadmapStatus", "position": 12, "type": "account" }, { "name": "practise", "position": 13, "type": "account" }, { "name": "ContractsComment", "position": 94, "type": "account" }, { "name": "LineItemOwner", "position": 95, "type": "account" }, { "name": "practise", "position": 6, "type": "zero" }, { "name": "clusterName", "position": 7, "type": "zero" }, { "name": "roadmapStatus", "position": 12, "type": "zero" }, { "name": "LineItemOwner", "position": 95, "type": "zero" }, { "name": "cognitiveRank", "position": 104, "type": "account", "excludefromaction": "true" }, { "name": "cognitiveRankReasoning", "position": 105, "type": "account", "excludefromaction": "true" }, { "name": "cognitiveClaimFlagReasoning", "position": 106, "type": "account", "excludefromaction": "true" }] }'
+				 
+		    WHERE REGION = 'NA-GBS' and KEY = 'ADDITIONAL_FIELDS'; 
+		</sql>
+	</changeSet>
+
+</databaseChangeLog>
+ 
+ <!-- UPDATE SYSTEM_PROPERTIES SET VAL='{ "queryExtra": [{"name": "Coverage id_load",  "type": "account"},{"name": "Contract #_load",  "type": "account"}], "ui": [{"name": "coverageId", "position": 5, "type": "account"}, {"name": "contract", "position": 2, "type": "account"}]}'  
+			WHERE REGION = 'NA-GTS' and KEY = 'ADDITIONAL_FIELDS'; -->

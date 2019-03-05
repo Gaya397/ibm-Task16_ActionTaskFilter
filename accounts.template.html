@@ -1,0 +1,356 @@
+<div class="container ibm-background-white-core margin-bottom-25">
+  <div class="row roadmap-filters">
+    <div class="col-md-12 ibm-row-form">
+      <div class="roadmap-level-title">
+        <h3 class="ibm-h3 ibp-h5 business-unit">{{ getCurrentStateName() }} </h3>
+      </div>
+
+      <div class="roadmap-filters-wrap">
+        <span class="glyphicon glyphicon-trash remove-actions-btn pull-right roadmap-filters" ng-if="isActionsClearingEnabled()"
+          ng-click="showClearActionsModal()" title="Remove actions">
+        </span>
+        <div ng-if="isActionsClearingEnabled()" class="roadmap-filter-seperator pull-right"></div>
+        <a href="" id="btn-export" class="roadmap-filters pull-right ibm-download-link roadmap-inline-text" ng-click="exportRdmp(roadmapType!=='actions', (nodeData.Caption || nodeData.Name))">Download</a>
+        <div class="roadmap-filter-seperator pull-right"></div>
+        <a href="" id="pop-col-filter" popover-is-open="columnFilter.isOpen" class="roadmap-filters icon-ibp-gears pull-right" ng-class="{'active': columnFilter.isOpen}" uib-popover-template="'components/accounts/columns-popover-template.html'"
+        popover-placement="bottom-right" popover-class="roadmap-filters-popover" popover-trigger="'outsideClick'">Columns and rows</a>
+      <div class="roadmap-filter-seperator pull-right"></div>
+      <a href="" id="btn-filter" class="roadmap-filters icon-ibp-filter pull-right" ng-class="{'active': filtersOpen, 'icon-ibp-filter-applied': isFilterAplied}"
+        ng-click="filtersOpen = !filtersOpen; filtersOpen ? manageFilterState('save') : manageFilterState('restore')">Filter</a>
+      <script type="text/ng-template" id="viewCommitPopoverTemplate.html">
+        <div class="roadmap-columns-popover-header">
+          <p>Select view totals mode</p>
+          <a href="" class="roadmap-columns-close icon-ibp-close" ng-click="viewCommitPopover.close();"></a>
+        </div>
+        <a href="" class="item noselect" ng-class="{'active': viewCommitPopover.activeIndex == 0}"  ng-click="viewCommitPopover.select(0);">{{ viewCommitPopover.selections[0].label }}</a>
+        <div class="separator"></div>
+        <a href="" class="item noselect" ng-class="{'active': viewCommitPopover.activeIndex == 1}"  ng-click="viewCommitPopover.select(1);">{{ viewCommitPopover.selections[1].label }}</a>
+      </script>
+      </div>
+
+      <div class="ibm-column-form pull-right roadmap-filters-search">
+        <input placeholder="Search" id="filter" type="text" ng-model="filterValue" ng-model-options="{ debounce: 500 }" ng-change="gridApi.grid.refresh()">
+        <span class="roadmap-filters-search-icon icon-ibp-magnify-glass"></span>
+      </div>
+      <div ng-if="myData" class="roadmap-showing pull-right">Showing {{ gridApi.core.getVisibleRows().length }} of {{ myData.length }} entries</div>
+
+<div class="roadmap-textFilters" ng-show="filtersOpen">
+  <form id="roadmap-filter-form" class="ibm-row-form">
+      <p class="filter-multiselect">
+        <label for="account-name">Account name</label>
+          <isteven-multi-select
+          input-model="accountNameFilterOptions"
+          output-model="accountNameFilterOptionsOut"
+          button-label="name"
+          item-label="name"
+          default-label="All"
+          tick-property="ticked"
+          disable-property="disabled"
+          is-disabled="disableDir"
+          helper-elements="none"
+          translation="localLang"
+          max-height="250px"
+          >
+      </isteven-multi-select>
+      </p>
+      <p class="filter-multiselect"  ng-hide="selectedView=='account' || nodeData.top">
+        <label for="contract-number">Contract number</label>
+        <isteven-multi-select
+          input-model="contractNumberFilterOptions"
+          output-model="contractNumberFilterOptionsOut"
+          button-label="name"
+          item-label="name"
+          default-label="All"
+          tick-property="ticked"
+          disable-property="disabled"
+          is-disabled="disableDir"
+          helper-elements="none"
+          translation="localLang"
+          max-height="250px"
+        >
+        </isteven-multi-select>
+      </p>
+      <p class="filter-multiselect" ng-hide="selectedView=='account'">
+        <label for="roadmap">Roadmap</label>
+        <isteven-multi-select
+  		    input-model="roadmapTypeOptions"
+  		    output-model="roadmapTypeOptionsOut"
+  		    button-label="name"
+  		    item-label="name"
+          default-label="All"
+  		    tick-property="ticked"
+  		    disable-property="disabled"
+          is-disabled="disableDir"
+          helper-elements="none"
+          translation="localLang"
+          max-height="250px"
+        >
+        </isteven-multi-select>
+      </p>
+
+      <p class="filter-multiselect" ng-show="viewRdmLevelPopover.activeIndex == 0" ng-hide="selectedView=='account'">
+        <label for="legal-number">Service line</label>
+        <isteven-multi-select
+  		    input-model="serviceLineFilterOptions"
+  		    output-model="serviceLineFilterOptionsOut"
+  		    button-label="name"
+  		    item-label="name"
+          default-label="All"
+  		    tick-property="ticked"
+  		    disable-property="disabled"
+          is-disabled="disableDir"
+          helper-elements="none"
+          group-property="slGroup"
+          on-item-click="onServiceLinesMultiSelectItemClick(data)"
+          translation="localLang"
+        >
+        </isteven-multi-select>
+      </p>
+
+      <p ng-hide="selectedView=='account'">
+        <label for="legal-number">Affiliates/IBM</label>
+        <ui-select ng-model="$parent.affiliatesFilter">
+            <ui-select-match>
+                <span ng-bind="$select.selected.name"></span>
+            </ui-select-match>
+            <ui-select-choices repeat="item in (affiliatesFilterOptions | orderBy:'value' | filter: $select.search ) track by item.value">
+                <span ng-bind="item.name"></span>
+            </ui-select-choices>
+        </ui-select>
+      </p>
+
+      <p class="filter-multiselect" ng-hide="selectedView=='account' || nodeData.top">
+        <label for="legal-number">Legal contract number</label>
+        <isteven-multi-select
+  		    input-model="legalNumberFilterOptions"
+  		    output-model="legalNumberFilterOptionsOut"
+  		    button-label="name"
+  		    item-label="name"
+          default-label="All"
+  		    tick-property="ticked"
+  		    disable-property="disabled"
+          is-disabled="disableDir"
+          helper-elements="none"
+          translation="localLang"
+          max-height="250px"
+        >
+        </isteven-multi-select>
+      </p>
+
+      <p class="filter-multiselect" ng-show="viewRdmLevelPopover.activeIndex == 0" ng-hide="selectedView=='account'">
+        <label for="industry">Industry</label>
+        <isteven-multi-select
+  		    input-model="industryFilterOptions"
+  		    output-model="industryFilterOptionsOut"
+  		    button-label="name"
+  		    item-label="name"
+          default-label="All"
+  		    tick-property="ticked"
+  		    disable-property="disabled"
+          is-disabled="disableDir"
+          helper-elements="none"
+          translation="localLang"
+          max-height="250px"
+          >
+        </isteven-multi-select>
+      </p>
+
+      <p class="filter-multiselect" ng-hide="selectedView=='account'">
+        <label for="sales-status">Sales status</label>
+        <isteven-multi-select
+          input-model="salesStatusFilterOptions"
+          output-model="salesStatusFilterOptionsOut"
+          button-label="name"
+          item-label="name"
+          default-label="All"
+          tick-property="ticked"
+          disable-property="disabled"
+          is-disabled="disableDir"
+          helper-elements="none"
+          group-property="slGroup"
+          on-item-click="onServiceLinesMultiSelectItemClick(data)"
+          translation="localLang"
+        >
+        </isteven-multi-select>
+      </p>
+      <p class="filter-multiselect" ng-if="$ctrl.region === 'NA-GBS'" ng-hide="selectedView=='account'">
+          <label for="sales-status">SC Status</label>
+          <isteven-multi-select
+            input-model="scStatusFilterOptions"
+            output-model="scStatusFilterOptionsOut"
+            button-label="name"
+            item-label="name"
+            default-label="All"
+            tick-property="ticked"
+            disable-property="disabled"
+            is-disabled="disableDir"
+            helper-elements="none"
+            group-property="slGroup"
+            on-item-click="onServiceLinesMultiSelectItemClick(data)"
+            translation="localLang"
+          >
+          </isteven-multi-select>
+        </p>
+        <p class="filter-multiselect" ng-if="$ctrl.region === 'NA-GBS'" ng-hide="selectedView=='account'">
+          <label for="sales-status">Action Task ID</label>
+          <isteven-multi-select
+            input-model="actionTaskIdFilterOptions"
+            output-model="actionTaskIdFilterOptionsOut"
+            button-label="name"
+            item-label="name"
+            default-label="All"
+            tick-property="ticked"
+            disable-property="disabled"
+            is-disabled="disableDir"
+            helper-elements="none"
+            group-property="slGroup"
+            on-item-click="onServiceLinesMultiSelectItemClick(data)"
+            translation="localLang"
+          >
+          </isteven-multi-select>
+        </p>
+      <p class="filter-multiselect" ng-show="showClusterFilter && selectedView!=='account'">
+        <label for="sales-status">Cluster</label>
+        <isteven-multi-select input-model="clusterNameFilterOptions" output-model="clusterNameFilterOptionsOut" button-label="name"
+          item-label="name" default-label="All" tick-property="ticked" disable-property="disabled" is-disabled="disableDir"
+          helper-elements="none" group-property="slGroup" on-item-click="onServiceLinesMultiSelectItemClick(data)" translation="localLang">
+        </isteven-multi-select>
+      </p>
+
+      <p class="filter-multiselect" ng-hide="selectedView=='account'">
+        <label>Source</label>
+        <isteven-multi-select
+          input-model="sourceFilterOptions"
+          output-model="sourceFilterOptionsOut"
+          button-label="name"
+          item-label="name"
+          default-label="All"
+          tick-property="ticked"
+          disable-property="disabled"
+          is-disabled="disableDir"
+          helper-elements="none"
+          translation="localLang"
+        >
+        </isteven-multi-select>
+      </p>
+
+      <p class="filter-multiselect" ng-hide="roadmapType!=='actions'">
+        <label for="account-name">RAG</label>
+        <isteven-multi-select
+          input-model="ragFilterOptions"
+          output-model="ragFilterOptionsOut"
+          button-label="name"
+          item-label="name"
+          default-label="All"
+          tick-property="ticked"
+          disable-property="disabled"
+          is-disabled="disableDir"
+          helper-elements="none"
+          translation="localLang"
+          max-height="250px"
+        >
+        </isteven-multi-select>
+      </p>
+      <p class="filter-multiselect" ng-hide="roadmapType!=='actions'">
+        <label for="account-name">Risk</label>
+        <isteven-multi-select
+          input-model="revenueRiskCategoryFilterOptions"
+          output-model="revenueRiskCategoryFilterOptionsOut"
+          button-label="name"
+          item-label="name"
+          default-label="All"
+          tick-property="ticked"
+          disable-property="disabled"
+          is-disabled="disableDir"
+          helper-elements="none"
+          translation="localLang"
+          max-height="250px"
+        >
+        </isteven-multi-select>
+      </p>
+
+      <p class="filter-multiselect"  ng-show="showPracticeFilter && selectedView!=='account'">
+          <label for="practice">Practise</label>
+          <isteven-multi-select
+            input-model="practiceNameFilterOptions"
+            output-model="practiceNameFilterOptionsOut"
+            button-label="name"
+            item-label="name"
+            default-label="All"
+            tick-property="ticked"
+            disable-property="disabled"
+            is-disabled="disableDir"
+            helper-elements="none"
+            group-property="slGroup"
+            on-item-click="onServiceLinesMultiSelectItemClick(data)"
+            translation="localLang"
+          >
+          </isteven-multi-select>
+        </p>
+        <p class="filter-multiselect" ng-show="showCognitiveRankFilter && selectedView!=='account'">
+          <label for="sales-status">Rank</label>
+          <isteven-multi-select input-model="cognitiveRankFilterOptions" output-model="cognitiveRankFilterOptionsOut" button-label="name"
+            item-label="name" default-label="All" tick-property="ticked" disable-property="disabled" is-disabled="disableDir"
+            helper-elements="none" group-property="slGroup" on-item-click="onServiceLinesMultiSelectItemClick(data)" translation="localLang">
+          </isteven-multi-select>
+        </p>
+        <p class="filter-multiselect" ng-show="showRankReasoningFilter && selectedView!=='account'">
+          <label for="sales-status">Revenue Insight</label>
+          <isteven-multi-select input-model="cognitiveRankReasoningFilterOptions" output-model="cognitiveRankReasoningFilterOptionsOut" button-label="name"
+            item-label="name" default-label="All" tick-property="ticked" disable-property="disabled" is-disabled="disableDir"
+            helper-elements="none" group-property="slGroup" on-item-click="onServiceLinesMultiSelectItemClick(data)" translation="localLang" max-height="250px">
+          </isteven-multi-select>
+        </p>
+
+        <p class="filter-multiselect" ng-show="showClaimFlagReasoningFilter && selectedView!=='account'">
+          <label>&nbsp;</label>
+          <input class="ibm-styled-checkbox" id="show-claim-flag" type="checkbox" ng-model="contractWithClaimFlag">
+          <label for="show-claim-flag">Contracts with Claiming Insight</label>
+        </p>
+
+        <p class="filter-multiselect" ng-show="isEuGtsRegion() && roadmapType ==='actions'">
+          <label>&nbsp;</label>
+          <input class="ibm-styled-checkbox" id="show-actions-comments-flag" type="checkbox" ng-model="actionWithCommentFlag">
+          <label for="show-actions-comments-flag">Actions with available comments</label>
+        </p>
+        <p class="filter-multiselect" ng-show="showCountryFilter()">
+          <label for="country">Country</label>
+          <isteven-multi-select
+            input-model="countryFilterOptions"
+            output-model="countryFilterOptionsOut"
+            button-label="name"
+            item-label="name"
+            default-label="All"
+            tick-property="ticked"
+            disable-property="disabled"
+            is-disabled="disableDir"
+            helper-elements="none"
+            translation="localLang"
+            max-height="250px"
+          >
+          </isteven-multi-select>
+        </p>
+    <div>
+      <p class="filter-multiselect" ng-if="TRAVEL_COST">
+        <input class="ibm-styled-checkbox" id="travel-cost" type="checkbox" ng-model="travelCost.Flag">
+        <label for="travel-cost">Exclude travel cost</label>
+      </p>
+    </div>
+
+    <div class="pull-right">
+      <button id="btn-filter-reset" class="ibm-btn-sec ibm-btn-blue-50 ibm-btn-small" type="button" ng-click="resetFilter();">Reset</button>
+      <button id="btn-filter-apply" class="ibm-btn-pri ibm-btn-blue-50 ibm-btn-small" type="button" ng-click="applyFilter();">Apply</button>
+      <button id="btn-filter-cancel" class="ibm-btn-sec ibm-btn-blue-50 ibm-btn-small" type="button" ng-click="filtersOpen = false; manageFilterState('restore')">Cancel</button>
+    </div>
+  </form>
+</div>
+
+</div>
+</div>
+
+<div class="row dashboard-listview roadmap-list" ng-class="{'cursor-over-disabled-row': !isSelectableRoadmap()}">
+  <div ng-if="!$root.isNodeLocking" class="col-md-12">
+    <my-Grid></my-Grid>
+  </div>
+</div>
+</div>
